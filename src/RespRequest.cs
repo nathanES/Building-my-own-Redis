@@ -18,6 +18,7 @@ public class RespRequest
             return null;
         var requestBuilder = new RespRequestBuilder();//TODO to update
         var request = Encoding.UTF8.GetString(rawRequest, 0, requestLength);
+        Console.WriteLine($"Request : {request}");
         requestBuilder.AddCommand(request);
         throw new NotImplementedException(nameof(RespRequest.Parse));
     }
