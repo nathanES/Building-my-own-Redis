@@ -20,10 +20,10 @@ public class RespRequest
 
         var index = 1;
         var numberOfArguments = ReadInteger(rawRequest, ref index);
-
+        Console.WriteLine($"{nameof(numberOfArguments)}: {numberOfArguments})");
         RespRequestBuilder respRequestBuilder = new RespRequestBuilder()
             .AddCommand(ReadBulkString(rawRequest, ref index));
-        for (var i = 0; i < numberOfArguments; i++)
+        for (var i = 1; i < numberOfArguments; i++)
             respRequestBuilder.AddArgument(ReadBulkString(rawRequest, ref index));
         return respRequestBuilder.Build();
     }
