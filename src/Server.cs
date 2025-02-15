@@ -98,13 +98,13 @@ class Program
     private static RespResponse HandlePing(RespRequest respRequest)
     {
         Console.WriteLine("Ping Command received...");
-        return RespResponse.BulkString("PONG");
+        return RespResponse.FromBulkString("PONG");
     }
 
     private static RespResponse HandleUnknownCommand(RespRequest request)
     {
         Console.WriteLine($"Unknown Command received... : {request.Command}");
-        return RespResponse.SimpleError("Unknown Command");
+        return RespResponse.FromError("Unknown Command");
     }
 }
 

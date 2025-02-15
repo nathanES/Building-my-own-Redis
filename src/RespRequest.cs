@@ -6,29 +6,69 @@ public class RespRequest
 {
     public RedisCommand Command { get; private set; } = RedisCommand.Unknown;
     public List<string> Arguments { get; private set; } = [];
-    
+
     private static readonly Dictionary<string, RedisCommand> CommandLookup = new(StringComparer.OrdinalIgnoreCase)
     {
         { "PING", RedisCommand.Ping },
         // { "ECHO", RedisCommand.Echo }
     };
+
     public static RespRequest? Parse(byte[] rawRequest, int requestLength)
     {
-        if (requestLength == 0 || rawRequest[0]!='*')
+        if (requestLength == 0 || rawRequest[0] != '*')
             return null;
-        var requestBuilder = new RespRequestBuilder();//TODO to update
-        var request = Encoding.UTF8.GetString(rawRequest, 0, requestLength);
-        Console.WriteLine($"Request : {request}");
-        requestBuilder.AddCommand(request);
-        throw new NotImplementedException(nameof(RespRequest.Parse));
+
+        var index = 1;
+        var numberOfArguments = ReadInteger(rawRequest, ref index);
+
+        RespRequestBuilder respRequestBuilder = new RespRequestBuilder()
+            .AddCommand(ReadBulkString(rawRequest, ref index));
+        for (var i = 0; i < numberOfArguments; i++)
+            respRequestBuilder.AddArgument(ReadBulkString(rawRequest, ref index));
+        return respRequestBuilder.Build();
+    }
+
+    private static int ReadInteger(byte[] rawRequest, ref int index)
+    {
+        int result = 0;
+        bool negative = false;
+        if (rawRequest[index] == '-')
+        {
+            negative = true;
+            index++;
+        }
+
+        while (rawRequest[index] != '\r')
+        {
+            result = result * 10 + (rawRequest[index] - '0');
+            index++;
+        }
+
+        index += 2; //skip \r\n
+        return negative ? -1 * result : result;
+    }
+
+    private static string? ReadBulkString(byte[] rawRequest, ref int index)
+    {
+        if (rawRequest[index] != '$')
+            return null;
+        index++;
+        int length = ReadInteger(rawRequest, ref index);
+
+        string bulkString = Encoding.UTF8.GetString(rawRequest, index, length);
+        index += length + 2; //Skip @string length and \r\n
+        return bulkString;
     }
 
     public class RespRequestBuilder
     {
-        private readonly RespRequest _respRequest = new ();
+        private readonly RespRequest _respRequest = new();
 
-        public RespRequestBuilder AddCommand(string command)
+        public RespRequestBuilder AddCommand(string? command)
         {
+            if (command == null)
+                return this;
+            
             if (CommandLookup.TryGetValue(command, out var redisCommand))
                 AddCommand(redisCommand);
             return this;
@@ -44,25 +84,31 @@ public class RespRequest
         {
             foreach (var argument in arguments)
             {
-               AddArgument(argument); 
+                AddArgument(argument);
             }
+
             return this;
         }
+
         public RespRequestBuilder AddArguments(string[] arguments)
         {
             foreach (var argument in arguments)
             {
-                AddArgument(argument); 
+                AddArgument(argument);
             }
+
             return this;
         }
-        public RespRequestBuilder AddArgument(string argument)
+
+        public RespRequestBuilder AddArgument(string? argument)
         {
+            if (argument == null)
+                return this;
+            
             _respRequest.Arguments.Add(argument);
             return this;
         }
-        
-        
+        public RespRequest Build() => _respRequest;
     }
 }
 
@@ -70,10 +116,10 @@ public class RespResponse
 {
     public ReadOnlyMemory<byte> RawResponse { get; private set; }
 
-    private RespResponse(ReadOnlyMemory<byte> rawResponse) 
+    private RespResponse(ReadOnlyMemory<byte> rawResponse)
         => RawResponse = rawResponse;
 
-    private static RespResponse CreateResponse(char prefix, string message)
+    private static RespResponse BuildRespMessage(char prefix, string message)
     {
         int length = message.Length + 3;
         Span<byte> buffer = stackalloc byte[length];
@@ -84,26 +130,28 @@ public class RespResponse
         return new RespResponse(buffer.ToArray());
     }
 
-    public static RespResponse SimpleString(string @string)
-        => CreateResponse('+', @string);
-    public static RespResponse SimpleError(string error)
-        => CreateResponse('-', error);
-    public static RespResponse Integers(int integers)
-        => CreateResponse(':', integers.ToString());
+    public static RespResponse FromSimpleString(string @string)
+        => BuildRespMessage('+', @string);
 
-    public static RespResponse BulkString(string? bulkString)
-        => bulkString is null 
-            ? CreateResponse('$', "-1") 
-            : CreateResponse('$', $"{bulkString.Length}\r\n{bulkString}");
+    public static RespResponse FromError(string error)
+        => BuildRespMessage('-', error);
 
-    public static RespResponse Array(string[] array)
+    public static RespResponse FromInteger(int integer)
+        => BuildRespMessage(':', integer.ToString());
+
+    public static RespResponse FromBulkString(string? bulkString)
+        => bulkString is null
+            ? BuildRespMessage('$', "-1")
+            : BuildRespMessage('$', $"{bulkString.Length}\r\n{bulkString}");
+
+    public static RespResponse FromArray(string[] array)
     {
         StringBuilder sb = new();
         sb.Append($"{array.Length}");
         foreach (var element in array)
             sb.Append($"\r\n${element.Length}\r\n{element}");
-        return CreateResponse('*', sb.ToString()); 
+        return BuildRespMessage('*', sb.ToString());
     }
-    
+
     public byte[] GetRawResponse() => RawResponse.ToArray();
 }
