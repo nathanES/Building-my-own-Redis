@@ -56,7 +56,7 @@ public class RespRequest
         int length = ReadInteger(rawRequest, ref index);
 
         string bulkString = Encoding.UTF8.GetString(rawRequest, index, length);
-        index += length + 2; //Skip @string length and \r\n
+        index += length + 2; //Skip bulkString length and \r\n
         return bulkString;
     }
 

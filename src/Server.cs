@@ -29,7 +29,7 @@ class Program
             {
                 var socket = await server.AcceptSocketAsync(cts.Token);
                 Console.WriteLine("Client connected"); 
-                _ = Task.Run(()=> HandleClient(socket), cts.Token);
+                _ = Task.Run(()=> HandleClient(socket, cts.Token), cts.Token);
             }
         }
         catch (OperationCanceledException)
@@ -47,21 +47,24 @@ class Program
         }
     }
 
-    private static async Task HandleClient(Socket socket)
+    private static async Task HandleClient(Socket socket, CancellationToken ct)
     {
         try
         {
-            var buffer = new byte[1_024];
-            var requestLength = await socket.ReceiveAsync(buffer);
-            Console.WriteLine($"Received {requestLength} bytes");
-            var respRequest = RespRequest.Parse(buffer[..requestLength], requestLength);
-            if (respRequest == null)
+            while (socket.Connected)// Client disconnects normally → socket.ReceiveAsync() returns 0, closing the loop.
             {
-                Console.WriteLine("Received null request");
-                return;
+                var buffer = new byte[1_024];
+                var requestLength = await socket.ReceiveAsync(buffer);
+                Console.WriteLine($"Received {requestLength} bytes");
+                var respRequest = RespRequest.Parse(buffer[..requestLength], requestLength);
+                if (respRequest == null)
+                {
+                    Console.WriteLine("Received null request");
+                    return;
+                }
+                var respResponse = HandleRequest(respRequest);
+                await SendResponse(socket, respResponse, ct);
             }
-            var respResponse = HandleRequest(respRequest);
-            await SendResponse(socket, respResponse);
         }
         catch (Exception e)
         {
@@ -90,9 +93,9 @@ class Program
         Console.WriteLine($"Command : {request.Command}");
         return handler(request);
     }
-    private static async Task SendResponse(Socket socket, RespResponse respResponse)
+    private static async Task SendResponse(Socket socket, RespResponse respResponse, CancellationToken ct = default)
     {
-        await socket.SendAsync(respResponse.GetRawResponse());
+        await socket.SendAsync(respResponse.GetRawResponse(), cancellationToken: ct);
     }
 
     private static RespResponse HandlePing(RespRequest respRequest)
