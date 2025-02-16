@@ -1,19 +1,23 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Authentication.ExtendedProtection;
 using codecrafters_redis;
+using codecrafters_redis.RedisCommands;
+using codecrafters_redis.RespRequestResponse;
+using Microsoft.Extensions.DependencyInjection;
 
 class Program
 {
-    private static readonly Dictionary<RedisCommand, Func<RespRequest, RespResponse>> _requestHandlers =
-        new()
-        {
-            { RedisCommand.Unknown , HandleUnknownCommand},
-            { RedisCommand.Ping, HandlePing},
-            { RedisCommand.Echo, HandleEcho },
-            
-        };
+    private static RedisCommandsRegistry _redisCommandsRegistry;
+
     static async Task Main()
     {
+        var serviceProvider = new ServiceCollection()
+            .AddDependencies()
+            .BuildServiceProvider();
+        
+        _redisCommandsRegistry = new RedisCommandsRegistry(serviceProvider);
+        
         var cts = new CancellationTokenSource();
         Console.CancelKeyPress += (sender, args) =>
         {
@@ -30,8 +34,8 @@ class Program
             while (!cts.Token.IsCancellationRequested)
             {
                 var socket = await server.AcceptSocketAsync(cts.Token);
-                Console.WriteLine("Client connected"); 
-                _ = Task.Run(()=> HandleClient(socket, cts.Token), cts.Token);
+                Console.WriteLine("Client connected");
+                _ = Task.Run(() => HandleClient(socket, cts.Token), cts.Token);
             }
         }
         catch (OperationCanceledException)
@@ -53,7 +57,7 @@ class Program
     {
         try
         {
-            while (socket.Connected)// Client disconnects normally → socket.ReceiveAsync() returns 0, closing the loop.
+            while (socket.Connected) // Client disconnects normally → socket.ReceiveAsync() returns 0, closing the loop.
             {
                 var buffer = new byte[1_024];
                 var requestLength = await socket.ReceiveAsync(buffer);
@@ -64,6 +68,7 @@ class Program
                     Console.WriteLine("Received null request");
                     return;
                 }
+
                 var respResponse = HandleRequest(respRequest);
                 await SendResponse(socket, respResponse, ct);
             }
@@ -78,9 +83,9 @@ class Program
             {
                 Console.WriteLine("Shutting Down the Socket connection...");
                 socket.Shutdown(SocketShutdown.Both);
-                Console.WriteLine("Socket connection is shut down"); 
+                Console.WriteLine("Socket connection is shut down");
             }
-            
+
             Console.WriteLine("Closing the Socket connection...");
             socket.Close();
             Console.WriteLine("Socket connection closed");
@@ -89,34 +94,12 @@ class Program
 
     private static RespResponse HandleRequest(RespRequest request)
     {
-        if (!_requestHandlers.TryGetValue(request.Command, out var handler))
-            return HandleUnknownCommand(request);
-        
-        Console.WriteLine($"Command : {request.Command}");
-        return handler(request);
+        var redisCommandHandler = _redisCommandsRegistry.GetHandler(request.Command);
+        return redisCommandHandler.Handle(request);
     }
+
     private static async Task SendResponse(Socket socket, RespResponse respResponse, CancellationToken ct = default)
     {
         await socket.SendAsync(respResponse.GetRawResponse(), cancellationToken: ct);
     }
-
-    private static RespResponse HandlePing(RespRequest respRequest)
-    {
-        Console.WriteLine("Ping Command received...");
-        return RespResponse.FromBulkString("PONG");
-    }
-
-    private static RespResponse HandleEcho(RespRequest respRequest)
-    {
-        Console.WriteLine("Echo Command received...");
-        return RespResponse.FromBulkString(respRequest.Arguments.First());
-    }
-
-    private static RespResponse HandleUnknownCommand(RespRequest request)
-    {
-        Console.WriteLine($"Unknown Command received... : {request.Command}");
-        return RespResponse.FromError("Unknown Command");
-    }
 }
-
-
