@@ -27,4 +27,5 @@ public class GetCommandHandler(IConfigRepository configRepository) : IRedisComma
             return RespResponse.FromError(request.Arguments.Count + " arguments must be at least 1");
         return RespResponse.FromBulkString(_configRepository.GetAsync(request.Arguments[0]).Result);
     }
+    
 }
