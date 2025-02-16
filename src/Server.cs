@@ -9,6 +9,8 @@ class Program
         {
             { RedisCommand.Unknown , HandleUnknownCommand},
             { RedisCommand.Ping, HandlePing},
+            { RedisCommand.Echo, HandleEcho },
+            
         };
     static async Task Main()
     {
@@ -102,6 +104,12 @@ class Program
     {
         Console.WriteLine("Ping Command received...");
         return RespResponse.FromBulkString("PONG");
+    }
+
+    private static RespResponse HandleEcho(RespRequest respRequest)
+    {
+        Console.WriteLine("Echo Command received...");
+        return RespResponse.FromBulkString(respRequest.Arguments.First());
     }
 
     private static RespResponse HandleUnknownCommand(RespRequest request)

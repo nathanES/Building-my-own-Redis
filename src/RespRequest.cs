@@ -10,7 +10,7 @@ public class RespRequest
     private static readonly Dictionary<string, RedisCommand> CommandLookup = new(StringComparer.OrdinalIgnoreCase)
     {
         { "PING", RedisCommand.Ping },
-        // { "ECHO", RedisCommand.Echo }
+        { "ECHO", RedisCommand.Echo }
     };
 
     public static RespRequest? Parse(byte[] rawRequest, int requestLength)
