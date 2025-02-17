@@ -3,29 +3,51 @@ using codecrafters_redis.RespRequestResponse;
 
 namespace codecrafters_redis.RedisCommands.Handlers;
 
-public class SetCommandHandler(IConfigRepository configRepository) : IRedisCommandHandler
+public class SetCommandHandler(IKeyValueRepository keyValueRepository) : IRedisCommandHandler
 {
-    private readonly IConfigRepository _configRepository = configRepository;
+    private readonly IKeyValueRepository _keyValueRepository = keyValueRepository;
     public RedisCommand Command => RedisCommand.Set;
 
     public RespResponse Handle(RespRequest request)
     {
-        if(request.Arguments.Count < 2)
-            RespResponse.FromError(request.Arguments.Count + " arguments must be at least 2");
-        _configRepository.SetAsync(request.Arguments[0], request.Arguments[1]);
+        var setCommandRequest = SetCommandParser.Parse(request.Arguments);
+        if (setCommandRequest == null)
+            return RespResponse.FromError("Invalid arguments provided.");
+
+        _keyValueRepository.SetAsync(setCommandRequest.Key, setCommandRequest.Value, setCommandRequest.Expiry);
         return RespResponse.FromSimpleString("OK");
     }
-}
 
-public class GetCommandHandler(IConfigRepository configRepository) : IRedisCommandHandler
-{
-    private readonly IConfigRepository _configRepository = configRepository;
-    public RedisCommand Command => RedisCommand.Get;
-    public RespResponse Handle(RespRequest request)
+    public record SetCommandRequest(string Key, string Value, TimeSpan? Expiry);
+
+    public static class SetCommandParser
     {
-        if (request.Arguments.Count < 1)
-            return RespResponse.FromError(request.Arguments.Count + " arguments must be at least 1");
-        return RespResponse.FromBulkString(_configRepository.GetAsync(request.Arguments[0]).Result);
+        public static SetCommandRequest? Parse(IReadOnlyList<string> arguments)
+        {
+            if (arguments.Count < 2)
+                return null;
+            var key = arguments[0];
+            var value = arguments[1];
+            TimeSpan? expiry = null;
+            for (int i = 2; i < arguments.Count; i++)
+            {
+                var arg = arguments[i].ToUpperInvariant();
+                switch (arg)
+                {
+                    case "EX":
+                        if (i + 1 >= arguments.Count || !int.TryParse(arguments[i + 1], out int seconds))
+                            return null;
+                        expiry = TimeSpan.FromSeconds(seconds);
+                        break;
+                    case "PX":
+                        if (i + 1 >= arguments.Count || !int.TryParse(arguments[i + 1], out int miliseconds))
+                            return null;
+                        expiry = TimeSpan.FromMilliseconds(miliseconds);
+                        break;
+                }
+            }
+
+            return new SetCommandRequest(key, value, expiry);
+        }
     }
-    
 }

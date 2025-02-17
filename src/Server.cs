@@ -17,8 +17,8 @@ class Program
             .BuildServiceProvider();
         
         _redisCommandsRegistry = new RedisCommandsRegistry(serviceProvider);
-        
-        var cts = new CancellationTokenSource();
+
+        var cts = serviceProvider.GetRequiredService<CancellationTokenSource>();
         Console.CancelKeyPress += (sender, args) =>
         {
             Console.WriteLine("Shutdown signal received...");

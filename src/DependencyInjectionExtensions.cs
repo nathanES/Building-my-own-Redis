@@ -7,16 +7,18 @@ public static class DependencyInjectionExtensions
 {
    public static IServiceCollection AddDependencies(this IServiceCollection services)
    {
-      services.AddRedisConfiguration();
+      var cts = new CancellationTokenSource();
+      services.AddSingleton(cts);//Register only for long lived services
+      
+      services.AddRedisKeyValue();
       return services;
    }
 }
-//TODO trouver un meilleur nom
-public static class RedisConfigurationDependencyInjection
+public static class RedisKeyValueDependencyInjection
 {
-   public static IServiceCollection AddRedisConfiguration(this IServiceCollection services)
+   public static IServiceCollection AddRedisKeyValue(this IServiceCollection services)
    {
-      services.AddSingleton<IConfigRepository>(new InMemoryConfigRepository());
+      services.AddSingleton<IKeyValueRepository, InMemoryKeyValueRepository>();
       return services;
    }
 }
