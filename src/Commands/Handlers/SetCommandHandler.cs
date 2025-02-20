@@ -1,26 +1,27 @@
-using codecrafters_redis.RedisRepositories;
-using codecrafters_redis.RespRequestResponse;
+using codecrafters_redis.Protocol;
+using codecrafters_redis.RedisCommands;
+using codecrafters_redis.RedisRepositories.KeyValue;
 
-namespace codecrafters_redis.RedisCommands.Handlers;
+namespace codecrafters_redis.Commands.Handlers;
 
-public class SetCommandHandler(IKeyValueRepository keyValueRepository) : IRedisCommandHandler
+public class SetCommandHandler(IRedisKeyValueRepository repository) : IRedisCommandHandler
 {
-    private readonly IKeyValueRepository _keyValueRepository = keyValueRepository;
+    private readonly IRedisKeyValueRepository _repository = repository;
     public RedisCommand Command => RedisCommand.Set;
 
-    public RespResponse Handle(RespRequest request)
+    public Task<RespResponse> HandleAsync(RespRequest request)
     {
         var setCommandRequest = SetCommandParser.Parse(request.Arguments);
         if (setCommandRequest == null)
-            return RespResponse.FromError("Invalid arguments provided.");
+            return Task.FromResult(RespResponse.FromError("Invalid arguments provided."));
 
-        _keyValueRepository.SetAsync(setCommandRequest.Key, setCommandRequest.Value, setCommandRequest.Expiry);
-        return RespResponse.FromSimpleString("OK");
+        _repository.SetAsync(setCommandRequest.Key, setCommandRequest.Value, setCommandRequest.Expiry);
+        return Task.FromResult(RespResponse.FromSimpleString("OK"));
     }
 
-    public record SetCommandRequest(string Key, string Value, TimeSpan? Expiry);
+    private record SetCommandRequest(string Key, string Value, TimeSpan? Expiry);
 
-    public static class SetCommandParser
+    private static class SetCommandParser
     {
         public static SetCommandRequest? Parse(IReadOnlyList<string> arguments)
         {

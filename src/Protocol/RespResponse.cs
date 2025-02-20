@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace codecrafters_redis.RespRequestResponse;
+namespace codecrafters_redis.Protocol;
 
 public class RespResponse
 {

@@ -1,14 +1,8 @@
 using System.Collections.Concurrent;
 
-namespace codecrafters_redis.RedisRepositories;
+namespace codecrafters_redis.RedisRepositories.KeyValue;
 
-public interface IKeyValueRepository
-{
-    public Task SetAsync(string key, string value, TimeSpan? expiry = null);
-    public Task<string?> GetAsync(string key);
-}
-
-public class InMemoryKeyValueRepository : IKeyValueRepository
+public class InMemoryKeyValueRepository : IRedisKeyValueRepository
 {
     private readonly ConcurrentDictionary<string, string> _keyValue = new();
     private readonly ConcurrentDictionary<string, DateTime> _keyExpiry = new();

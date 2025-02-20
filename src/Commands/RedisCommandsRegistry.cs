@@ -1,7 +1,8 @@
 using System.Reflection;
-using codecrafters_redis.RedisCommands.Handlers;
+using codecrafters_redis.Commands.Handlers;
+using codecrafters_redis.RedisCommands;
 
-namespace codecrafters_redis.RedisCommands;
+namespace codecrafters_redis.Commands;
 
 public class RedisCommandsRegistry
 {

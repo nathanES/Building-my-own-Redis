@@ -6,5 +6,6 @@ public enum RedisCommand
     Ping,
     Echo,
     Set,
-    Get
+    Get,
+    Config
 }

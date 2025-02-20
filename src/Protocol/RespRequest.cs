@@ -1,12 +1,17 @@
 using System.Text;
 using codecrafters_redis.RedisCommands;
 
-namespace codecrafters_redis.RespRequestResponse;
+namespace codecrafters_redis.Protocol;
 
 public class RespRequest
 {
     public RedisCommand Command { get; private set; } = RedisCommand.Unknown;
     public List<string> Arguments { get; private set; } = [];
+
+    private RespRequest()
+    {
+        
+    }
 
     private static readonly Dictionary<string, RedisCommand> CommandLookup = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -14,6 +19,7 @@ public class RespRequest
         { "ECHO", RedisCommand.Echo },
         { "SET", RedisCommand.Set },
         { "GET", RedisCommand.Get },
+        { "CONFIG", RedisCommand.Config },
     };
 
     public static RespRequest? Parse(byte[] rawRequest, int requestLength)

@@ -2,13 +2,16 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Authentication.ExtendedProtection;
 using codecrafters_redis;
+using codecrafters_redis.Commands;
+using codecrafters_redis.DependencyInjection;
+using codecrafters_redis.Protocol;
 using codecrafters_redis.RedisCommands;
-using codecrafters_redis.RespRequestResponse;
+using codecrafters_redis.RedisRepositories.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 class Program
 {
-    private static RedisCommandsRegistry _redisCommandsRegistry;
+    private static RedisCommandsRegistry _redisCommandsRegistry = null!;
 
     static async Task Main()
     {
@@ -17,6 +20,10 @@ class Program
             .BuildServiceProvider();
         
         _redisCommandsRegistry = new RedisCommandsRegistry(serviceProvider);
+        //Load configurations
+        await ConfigurationLoader.LoadConfiguration(
+            serviceProvider.GetRequiredService<IRedisConfigRepository>(),
+            Environment.GetCommandLineArgs().Skip(1).ToArray());
 
         var cts = serviceProvider.GetRequiredService<CancellationTokenSource>();
         Console.CancelKeyPress += (sender, args) =>
@@ -69,7 +76,7 @@ class Program
                     return;
                 }
 
-                var respResponse = HandleRequest(respRequest);
+                var respResponse =await HandleRequest(respRequest);
                 await SendResponse(socket, respResponse, ct);
             }
         }
@@ -92,10 +99,10 @@ class Program
         }
     }
 
-    private static RespResponse HandleRequest(RespRequest request)
+    private static Task<RespResponse> HandleRequest(RespRequest request)
     {
         var redisCommandHandler = _redisCommandsRegistry.GetHandler(request.Command);
-        return redisCommandHandler.Handle(request);
+        return redisCommandHandler.HandleAsync(request);
     }
 
     private static async Task SendResponse(Socket socket, RespResponse respResponse, CancellationToken ct = default)
