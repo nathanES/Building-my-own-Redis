@@ -1,21 +1,20 @@
 using codecrafters_redis.Protocol;
-using codecrafters_redis.RedisCommands;
-using codecrafters_redis.RedisRepositories.KeyValue;
+using codecrafters_redis.RedisRepositories.Storage;
 
 namespace codecrafters_redis.Commands.Handlers;
 
-public class SetCommandHandler(IRedisKeyValueRepository repository) : IRedisCommandHandler
+internal class SetCommandHandler(IRedisStorageRepository repository) : IRedisCommandHandler
 {
-    private readonly IRedisKeyValueRepository _repository = repository;
+    private readonly IRedisStorageRepository _repository = repository;
     public RedisCommand Command => RedisCommand.Set;
 
-    public Task<RespResponse> HandleAsync(RespRequest request)
+    public Task<RespResponse> HandleAsync(string clientId, RespRequest request)
     {
         var setCommandRequest = SetCommandParser.Parse(request.Arguments);
         if (setCommandRequest == null)
             return Task.FromResult(RespResponse.FromError("Invalid arguments provided."));
 
-        _repository.SetAsync(setCommandRequest.Key, setCommandRequest.Value, setCommandRequest.Expiry);
+        _repository.SetAsync(clientId, setCommandRequest.Key, setCommandRequest.Value, setCommandRequest.Expiry);
         return Task.FromResult(RespResponse.FromSimpleString("OK"));
     }
 

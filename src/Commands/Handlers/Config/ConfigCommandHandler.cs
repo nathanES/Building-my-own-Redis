@@ -1,14 +1,13 @@
 using codecrafters_redis.Protocol;
-using codecrafters_redis.RedisCommands;
 
 namespace codecrafters_redis.Commands.Handlers.Config;
 
-public class ConfigCommandHandler(ConfigGetCommandHandler configGetCommandHandler) : IRedisCommandHandler
+internal class ConfigCommandHandler(ConfigGetCommandHandler configGetCommandHandler) : IRedisCommandHandler
 {
     private readonly ConfigGetCommandHandler _configGetCommandHandler = configGetCommandHandler;
     public RedisCommand Command => RedisCommand.Config;
 
-    public async Task<RespResponse> HandleAsync(RespRequest request)
+    public async Task<RespResponse> HandleAsync(string clientId, RespRequest request)
     {
         var configRequest = ConfigCommandRequest.Parse(request.Arguments);
         if (configRequest == null)

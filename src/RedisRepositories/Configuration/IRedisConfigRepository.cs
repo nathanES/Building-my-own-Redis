@@ -1,7 +1,9 @@
 namespace codecrafters_redis.RedisRepositories.Configuration;
 
-public interface IRedisConfigRepository
+internal interface IRedisConfigRepository
 {
    public Task SetAsync(string key, string value);
+   public void Set(string key, string value);
    public Task<string?> GetAsync(string key);
+   public string? Get(string key);
 }

@@ -2,7 +2,7 @@ using System.Text;
 
 namespace codecrafters_redis.Protocol;
 
-public class RespResponse
+internal class RespResponse
 {
     public ReadOnlyMemory<byte> RawResponse { get; private set; }
 

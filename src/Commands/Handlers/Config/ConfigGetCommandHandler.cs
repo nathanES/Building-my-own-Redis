@@ -3,7 +3,7 @@ using codecrafters_redis.RedisRepositories.Configuration;
 
 namespace codecrafters_redis.Commands.Handlers.Config;
 
-public class ConfigGetCommandHandler(IRedisConfigRepository repository)
+internal class ConfigGetCommandHandler(IRedisConfigRepository repository)
 {
     private readonly IRedisConfigRepository _repository = repository;
     

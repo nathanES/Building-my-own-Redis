@@ -1,6 +1,6 @@
 namespace codecrafters_redis.RedisRepositories.Configuration;
 
-public static class ConfigurationLoader
+internal static class ConfigurationLoader
 {
    public static async Task LoadConfiguration(IRedisConfigRepository repository, string[] arguments)
    {

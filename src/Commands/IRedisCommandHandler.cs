@@ -1,10 +1,9 @@
 using codecrafters_redis.Protocol;
-using codecrafters_redis.RedisCommands;
 
 namespace codecrafters_redis.Commands;
 
-public interface IRedisCommandHandler
+internal interface IRedisCommandHandler
 {
     RedisCommand Command { get; }
-    Task<RespResponse> HandleAsync(RespRequest request);
+    Task<RespResponse> HandleAsync(string clientId, RespRequest request);
 }

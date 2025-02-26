@@ -1,33 +1,33 @@
 using codecrafters_redis.Commands.Handlers.Config;
 using codecrafters_redis.RedisRepositories.Configuration;
-using codecrafters_redis.RedisRepositories.KeyValue;
+using codecrafters_redis.RedisRepositories.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace codecrafters_redis.DependencyInjection;
 
-public static class DependencyInjectionExtensions
+internal static class DependencyInjectionExtensions
 {
    public static IServiceCollection AddDependencies(this IServiceCollection services)
    {
       var cts = new CancellationTokenSource();
       services.AddSingleton(cts);//Register only for long lived services
       
-      services.RegisterKeyValueRepository();
+      services.RegisterStorageRepository();
       services.AddRedisConfigDependencies();
       
       return services;
    }
 }
-public static class RedisKeyValueDependencyInjection
+internal static class RedisStorageDependencyInjection
 {
-   public static IServiceCollection RegisterKeyValueRepository(this IServiceCollection services)
+   public static IServiceCollection RegisterStorageRepository(this IServiceCollection services)
    {
-      services.AddSingleton<IRedisKeyValueRepository, InMemoryKeyValueRepository>();
+      services.AddSingleton<IRedisStorageRepository, InMemoryStorageRepository>();
       return services;
    }
 }
 
-public static class RedisConfigCommandDependencyInjection
+internal static class RedisConfigCommandDependencyInjection
 {
    public static IServiceCollection AddRedisConfigDependencies(this IServiceCollection services)
    {

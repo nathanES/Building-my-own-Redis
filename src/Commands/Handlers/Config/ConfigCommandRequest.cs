@@ -1,6 +1,6 @@
 namespace codecrafters_redis.Commands.Handlers.Config;
 
-public class ConfigCommandRequest
+internal class ConfigCommandRequest
 {
     public ConfigCommand Command { get; private set; } = ConfigCommand.Unknown;
     public List<string> Arguments { get; private set; } = [];

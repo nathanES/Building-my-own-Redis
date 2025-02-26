@@ -1,11 +1,12 @@
-namespace codecrafters_redis.RedisCommands;
+namespace codecrafters_redis.Commands;
 
-public enum RedisCommand
+internal enum RedisCommand
 {
     Unknown,
     Ping,
     Echo,
     Set,
     Get,
-    Config
+    Config,
+    Keys
 }

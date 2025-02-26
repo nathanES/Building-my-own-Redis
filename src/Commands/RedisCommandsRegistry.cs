@@ -1,10 +1,9 @@
 using System.Reflection;
 using codecrafters_redis.Commands.Handlers;
-using codecrafters_redis.RedisCommands;
 
 namespace codecrafters_redis.Commands;
 
-public class RedisCommandsRegistry
+internal class RedisCommandsRegistry
 {
     private readonly Dictionary<RedisCommand, IRedisCommandHandler> _handlers = new();
     public RedisCommandsRegistry(IServiceProvider serviceProvider)

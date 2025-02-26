@@ -5,7 +5,6 @@ using codecrafters_redis;
 using codecrafters_redis.Commands;
 using codecrafters_redis.DependencyInjection;
 using codecrafters_redis.Protocol;
-using codecrafters_redis.RedisCommands;
 using codecrafters_redis.RedisRepositories.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,7 +17,7 @@ class Program
         var serviceProvider = new ServiceCollection()
             .AddDependencies()
             .BuildServiceProvider();
-        
+
         _redisCommandsRegistry = new RedisCommandsRegistry(serviceProvider);
         //Load configurations
         await ConfigurationLoader.LoadConfiguration(
@@ -64,6 +63,7 @@ class Program
     {
         try
         {
+            string clientId = Guid.NewGuid().ToString();
             while (socket.Connected) // Client disconnects normally → socket.ReceiveAsync() returns 0, closing the loop.
             {
                 var buffer = new byte[1_024];
@@ -76,7 +76,8 @@ class Program
                     return;
                 }
 
-                var respResponse =await HandleRequest(respRequest);
+                
+                var respResponse = await HandleRequest(respRequest, clientId);
                 await SendResponse(socket, respResponse, ct);
             }
         }
@@ -99,10 +100,10 @@ class Program
         }
     }
 
-    private static Task<RespResponse> HandleRequest(RespRequest request)
+    private static Task<RespResponse> HandleRequest(RespRequest request, string clientId)
     {
         var redisCommandHandler = _redisCommandsRegistry.GetHandler(request.Command);
-        return redisCommandHandler.HandleAsync(request);
+        return redisCommandHandler.HandleAsync(clientId, request);
     }
 
     private static async Task SendResponse(Socket socket, RespResponse respResponse, CancellationToken ct = default)

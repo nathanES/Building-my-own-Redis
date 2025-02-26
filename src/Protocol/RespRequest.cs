@@ -1,9 +1,9 @@
 using System.Text;
-using codecrafters_redis.RedisCommands;
+using codecrafters_redis.Commands;
 
 namespace codecrafters_redis.Protocol;
 
-public class RespRequest
+internal class RespRequest
 {
     public RedisCommand Command { get; private set; } = RedisCommand.Unknown;
     public List<string> Arguments { get; private set; } = [];
@@ -20,6 +20,7 @@ public class RespRequest
         { "SET", RedisCommand.Set },
         { "GET", RedisCommand.Get },
         { "CONFIG", RedisCommand.Config },
+        { "KEYS", RedisCommand.Keys}
     };
 
     public static RespRequest? Parse(byte[] rawRequest, int requestLength)

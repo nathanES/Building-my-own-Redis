@@ -1,18 +1,17 @@
 using codecrafters_redis.Protocol;
-using codecrafters_redis.RedisCommands;
-using codecrafters_redis.RedisRepositories.KeyValue;
+using codecrafters_redis.RedisRepositories.Storage;
 
 namespace codecrafters_redis.Commands.Handlers;
 
-public class GetCommandHandler(IRedisKeyValueRepository redisKeyValueRepository) : IRedisCommandHandler
+internal class GetCommandHandler(IRedisStorageRepository redisStorageRepository) : IRedisCommandHandler
 {
-    private readonly IRedisKeyValueRepository _redisKeyValueRepository = redisKeyValueRepository;
+    private readonly IRedisStorageRepository _redisStorageRepository = redisStorageRepository;
     public RedisCommand Command => RedisCommand.Get;
-    public Task<RespResponse> HandleAsync(RespRequest request)
+    public Task<RespResponse> HandleAsync(string clientId, RespRequest request)
     {
         if (request.Arguments.Count < 1)
             return Task.FromResult(RespResponse.FromError(request.Arguments.Count + " arguments must be at least 1"));
-        return Task.FromResult(RespResponse.FromBulkString(_redisKeyValueRepository.GetAsync(request.Arguments[0]).Result));
+        return Task.FromResult(RespResponse.FromBulkString(_redisStorageRepository.GetAsync(clientId, request.Arguments[0]).Result));
     }
     
 }
