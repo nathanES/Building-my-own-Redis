@@ -6,20 +6,30 @@ namespace codecrafters_redis.RedisRepositories.Storage;
 
 internal class InMemoryStorageRepository : IRedisStorageRepository
 {
+    private readonly IRedisConfigRepository _configRepository;
     private readonly ConcurrentDictionary<int, ConcurrentDictionary<string, string>> _databases = new();
     private readonly ConcurrentDictionary<int, ConcurrentDictionary<string, DateTime>> _databaseExpiries = new();
 
     private readonly ConcurrentDictionary<string, int> _clientDbSelections = new();
-    private string _rdbFilePath;
 
     public InMemoryStorageRepository(CancellationTokenSource cancellationTokenSource,
         IRedisConfigRepository configRepository)
     {
-        var dir = configRepository.Get("dir");
-        var fileName = configRepository.Get("dbfilename");
-        _rdbFilePath = Path.Combine(dir!, fileName!);
-        LoadDictionaries();
+        _configRepository = configRepository;
         Task.Run(() => CleanUpDictionaries(cancellationTokenSource.Token), cancellationTokenSource.Token);
+    }
+
+    public Task LoadConfigurationAsync()
+    {
+        LoadConfiguration();
+        return Task.CompletedTask;
+    }
+
+    public void LoadConfiguration()
+    {
+        var dir = _configRepository.Get("dir");
+        var fileName = _configRepository.Get("dbfilename");
+        LoadDictionaries(Path.Combine(dir!, fileName!));
     }
 
     public Task SetAsync(string clientId, string key, string value, TimeSpan? expiry = null)
@@ -108,11 +118,11 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
         }
     }
 
-    private void LoadDictionaries()
+    private void LoadDictionaries(string rdbFilePath)
     {
-        if (!File.Exists(_rdbFilePath))
+        if (!File.Exists(rdbFilePath))
             return;
-        using FileStream fs = File.Open(_rdbFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using FileStream fs = File.Open(rdbFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         RdbFile? rdbFile = RdbFileConverter.Parse(fs);
 
         if (rdbFile == null)

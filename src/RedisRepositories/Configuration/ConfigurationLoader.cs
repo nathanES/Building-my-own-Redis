@@ -23,6 +23,8 @@ internal static class ConfigurationLoader
          Console.WriteLine($"Impossible to add {configKey} in config");
          return;
       }
+
+      Console.WriteLine($"Setting {configKey} to '{arguments[index]}'");
       await repository.SetAsync(configKey, arguments[index]);
    }
 }

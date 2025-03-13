@@ -15,6 +15,8 @@ internal static class DependencyInjectionExtensions
       services.RegisterStorageRepository();
       services.AddRedisConfigDependencies();
       
+      services.AddHostedService<ConfigurationStartupService>();
+      
       return services;
    }
 }

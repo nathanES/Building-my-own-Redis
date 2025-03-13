@@ -6,7 +6,9 @@ using codecrafters_redis.Commands;
 using codecrafters_redis.DependencyInjection;
 using codecrafters_redis.Protocol;
 using codecrafters_redis.RedisRepositories.Configuration;
+using codecrafters_redis.RedisRepositories.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 class Program
 {
@@ -18,13 +20,17 @@ class Program
             .AddDependencies()
             .BuildServiceProvider();
 
-        _redisCommandsRegistry = new RedisCommandsRegistry(serviceProvider);
-        //Load configurations
-        await ConfigurationLoader.LoadConfiguration(
-            serviceProvider.GetRequiredService<IRedisConfigRepository>(),
-            Environment.GetCommandLineArgs().Skip(1).ToArray());
-
         var cts = serviceProvider.GetRequiredService<CancellationTokenSource>();
+
+        //Load requirements
+        var host = serviceProvider.GetRequiredService<IHostedService>();
+        await host.StartAsync(cts.Token); 
+
+        await serviceProvider.GetRequiredService<IRedisStorageRepository>().LoadConfigurationAsync();
+        
+        //Register redis command
+        _redisCommandsRegistry = new RedisCommandsRegistry(serviceProvider);
+
         Console.CancelKeyPress += (sender, args) =>
         {
             Console.WriteLine("Shutdown signal received...");
