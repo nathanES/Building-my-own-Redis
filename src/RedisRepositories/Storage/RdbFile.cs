@@ -9,9 +9,9 @@ namespace codecrafters_redis.RedisRepositories.Storage;
 /// </summary>
 internal class RdbFile
 {
-    public int Version { get; private set; } = 11;
-    public Dictionary<int, RdbDatabase> Databases { get; private set; }
-    public Dictionary<string, string> AuxiliaryFields { get; private set; }
+    public int Version { get; private set; }
+    public Dictionary<int, RdbDatabase> Databases { get; private set; } = new Dictionary<int, RdbDatabase>();
+    public Dictionary<string, string> AuxiliaryFields { get; private set; } = new Dictionary<string, string>();
     public byte[] Checksum { get; private set; } = new byte[8];
     public bool IsChecksumValid { get; private set; } = false;
 
@@ -68,7 +68,7 @@ internal class RdbFile
 internal class RdbDatabase
 {
     public int DatabaseIndex { get; private set; }
-    public Dictionary<string, RdbEntry> KeyValues { get; private set; }
+    public Dictionary<string, RdbEntry> KeyValues { get; private set; } = new Dictionary<string, RdbEntry>();
 
     public RdbDatabase(int databaseIndex, Dictionary<string, RdbEntry> keyValues)
     {

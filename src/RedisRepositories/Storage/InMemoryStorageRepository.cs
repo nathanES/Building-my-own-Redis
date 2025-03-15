@@ -123,10 +123,11 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
         if (!File.Exists(rdbFilePath))
             return;
         using FileStream fs = File.Open(rdbFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        RdbFile? rdbFile = RdbFileConverter.Parse(fs);
-
+        var rdbFile = RdbFileConverter.ParseToRdbFile(fs);
         if (rdbFile == null)
             return;
+        //Validate checksum
+ 
         foreach (var dbKvp in rdbFile.Databases)
         {
             var keyValueStore =
