@@ -15,7 +15,7 @@ internal static class RdbFileConverter
     private const byte Auxiliary = 0xFA;
 
 
-    public static  RdbFile? ParseToRdbFile(FileStream fileStream )
+    public static async Task<RdbFile?> ParseToRdbFileAsync(FileStream fileStream)
     {
         using BinaryReader reader = new(fileStream, Encoding.UTF8, leaveOpen: true);
         var rdbFileBuilder = new RdbFile.RdbFileBuilder();
@@ -27,10 +27,10 @@ internal static class RdbFileConverter
         }
 
         rdbFileBuilder.WithVersion(version);
-        
+
         Console.WriteLine($"[Debug] Start Parsing Sections");
-        ParseAuxiliarySection(reader, rdbFileBuilder);
-        ParseDatabasesSection(reader, rdbFileBuilder);
+        await ParseAuxiliarySectionAsync(reader, rdbFileBuilder);
+        await ParseDatabasesSectionAsync(reader, rdbFileBuilder);
         Console.WriteLine($"[Debug] End Parsing Sections");
         byte[] checksum = ReadChecksum(reader);
         bool isChecksumValid = ValidateChecksum(checksum);
@@ -38,16 +38,16 @@ internal static class RdbFileConverter
         Console.WriteLine($"[Debug] End Parsing File : {JsonSerializer.Serialize(rdbFile)}");
         return rdbFile;
     }
-    
-        private static void ParseAuxiliarySection(BinaryReader reader, RdbFile.RdbFileBuilder fileBuilder)
+
+    private static Task ParseAuxiliarySectionAsync(BinaryReader reader, RdbFile.RdbFileBuilder fileBuilder)
     {
-        Console.WriteLine($"[Debug] Start {nameof(ParseAuxiliarySection)}");
+        Console.WriteLine($"[Debug] Start {nameof(ParseAuxiliarySectionAsync)}");
         while (!reader.IsEndOfStream())
         {
             var @byte = reader.ReadByte();
             if (@byte != Auxiliary)
             {
-                Console.WriteLine($"[Debug] End {nameof(ParseAuxiliarySection)}");
+                Console.WriteLine($"[Debug] End {nameof(ParseAuxiliarySectionAsync)}");
                 reader.BaseStream.Position -= 1;
                 break;
             }
@@ -58,33 +58,36 @@ internal static class RdbFileConverter
             Console.WriteLine($"[Debug] {nameof(value)} {value}");
             fileBuilder.AddAuxiliaryField(key, value);
         }
+        return Task.CompletedTask;
     }
-    private static void ParseDatabasesSection(BinaryReader reader, RdbFile.RdbFileBuilder fileBuilder)
+
+    private static async Task ParseDatabasesSectionAsync(BinaryReader reader, RdbFile.RdbFileBuilder fileBuilder)
     {
-        Console.WriteLine($"[Debug] Start {nameof(ParseDatabasesSection)}");
+        Console.WriteLine($"[Debug] Start {nameof(ParseDatabasesSectionAsync)}");
         while (!reader.IsEndOfStream())
         {
             var @byte = reader.ReadByte();
             if (@byte is EndOfFile or not DatabaseSelector)
-                break; 
+                break;
 
-            ParseDatabase(reader, out var rdbDatabase);
-            fileBuilder.AddDatabase(rdbDatabase); 
+            await ParseDatabaseAsync(reader, out var rdbDatabase);
+            fileBuilder.AddDatabase(rdbDatabase);
         }
     }
-    private static void ParseDatabase(BinaryReader reader, out RdbDatabase rdbDatabase)
+
+    private static Task ParseDatabaseAsync(BinaryReader reader, out RdbDatabase rdbDatabase)
     {
         int currentDb = reader.ReadByte();
         Console.WriteLine($"[Debug] Switching to DB >{currentDb}<");
 
         var currentDbBuilder = new RdbDatabase.RdbDatabaseBuilder().WithDatabaseIndex(currentDb);
-        
-        Console.WriteLine($"[Debug] Start {nameof(ParseDatabase)}");
+
+        Console.WriteLine($"[Debug] Start {nameof(ParseDatabaseAsync)}");
         var @byte = reader.ReadByte();
         Console.WriteLine($"[Debug] {nameof(@byte)} {@byte}");
         if (@byte != ResizeDb)
         {
-            Console.WriteLine($"[Error] End {nameof(ParseDatabase)} : missing {nameof(ResizeDb)}");
+            Console.WriteLine($"[Error] End {nameof(ParseDatabaseAsync)} : missing {nameof(ResizeDb)}");
             throw new Exception($"[Error] Expected {nameof(ResizeDb)} but got {@byte}");
         }
 
@@ -93,7 +96,7 @@ internal static class RdbFileConverter
         var resizeDatabaseExpiry = ReadLength(reader);
         Console.WriteLine($"[Debug] {nameof(resizeDatabaseExpiry)} : {resizeDatabaseExpiry}");
         DateTime? currentExpiration = null;
-        for (var i = 0; i < resizeDatabaseSize ; i++)
+        for (var i = 0; i < resizeDatabaseSize; i++)
         {
             switch (reader.ReadByte())
             {
@@ -118,27 +121,29 @@ internal static class RdbFileConverter
                         .WithExpiry(currentExpiration)
                         .Build();
                     Console.WriteLine("[Debug] Adding entry");
-                    currentDbBuilder.AddEntry(entry); 
+                    currentDbBuilder.AddEntry(entry);
                     currentExpiration = null;
                     break;
                 default:
                     throw new NotSupportedException($"[Error] Unexpected {nameof(ExpireTimeMs)}.");
             }
         }
+
         rdbDatabase = currentDbBuilder.Build();
+        return Task.CompletedTask;
     }
 
-    
+
     private static string ReadString(BinaryReader reader)
     {
         Console.WriteLine($"[Debug] Start {nameof(ReadString)}");
         var (isStringEncoded, stringLength) = GetStringLengthEncoding(reader);
         Console.WriteLine($"[Debug] {nameof(isStringEncoded)} {isStringEncoded}");
         Console.WriteLine($"[Debug] {nameof(stringLength)} {stringLength}");
-        
-        if (isStringEncoded) 
+
+        if (isStringEncoded)
             return Encoding.UTF8.GetString(reader.ReadBytes(stringLength));
-        
+
         //Stringed Integer
         var (isInt, intValue) = GetInt(reader);
         Console.WriteLine($"[Debug] {nameof(isInt)} {isInt}");
@@ -147,8 +152,6 @@ internal static class RdbFileConverter
             return intValue.ToString();
         //TODO
         throw new InvalidDataException($"[Error] Compressed String not yet Handled");
-
-
     }
 
     private static int ReadLength(BinaryReader reader)
@@ -157,10 +160,9 @@ internal static class RdbFileConverter
         var (isStringEncoded, stringLength) = GetStringLengthEncoding(reader);
         Console.WriteLine($"[Debug] {nameof(isStringEncoded)} {isStringEncoded}");
         Console.WriteLine($"[Debug] {nameof(stringLength)} {stringLength}");
-        if(!isStringEncoded)
+        if (!isStringEncoded)
             throw new InvalidDataException($"[Error] Cannot Read Length");
         return stringLength;
-        
     }
 
     private static (bool isInt, int value) GetInt(BinaryReader reader)

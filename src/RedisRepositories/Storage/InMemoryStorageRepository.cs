@@ -19,17 +19,16 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
         Task.Run(() => CleanUpDictionaries(cancellationTokenSource.Token), cancellationTokenSource.Token);
     }
 
-    public Task LoadConfigurationAsync()
+    public async Task LoadConfigurationAsync()
     {
-        LoadConfiguration();
-        return Task.CompletedTask;
+        var dir = await _configRepository.GetAsync("dir");
+        var fileName = await _configRepository.GetAsync("dbfilename");
+        await LoadDictionariesAsync(Path.Combine(dir!, fileName!));
     }
 
     public void LoadConfiguration()
     {
-        var dir = _configRepository.Get("dir");
-        var fileName = _configRepository.Get("dbfilename");
-        LoadDictionaries(Path.Combine(dir!, fileName!));
+        LoadConfigurationAsync().Wait();
     }
 
     public Task SetAsync(string clientId, string key, string value, TimeSpan? expiry = null)
@@ -118,12 +117,12 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
         }
     }
 
-    private void LoadDictionaries(string rdbFilePath)
+    private async Task LoadDictionariesAsync(string rdbFilePath)
     {
         if (!File.Exists(rdbFilePath))
             return;
         using FileStream fs = File.Open(rdbFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var rdbFile = RdbFileConverter.ParseToRdbFile(fs);
+        var rdbFile = await RdbFileConverter.ParseToRdbFileAsync(fs);
         if (rdbFile == null)
             return;
         //Validate checksum
