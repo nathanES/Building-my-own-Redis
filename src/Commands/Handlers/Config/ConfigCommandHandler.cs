@@ -16,7 +16,6 @@ internal class ConfigCommandHandler(ConfigGetCommandHandler configGetCommandHand
         {
             case ConfigCommand.Get:
                 return await _configGetCommandHandler.HandleAsync(configRequest);
-                break;
             case ConfigCommand.Unknown:
             default:
                 return RespResponse.FromError("Unknown Command for config");

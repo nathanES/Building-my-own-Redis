@@ -16,7 +16,7 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
         IRedisConfigRepository configRepository)
     {
         _configRepository = configRepository;
-        Task.Run(() => CleanUpDictionaries(cancellationTokenSource.Token), cancellationTokenSource.Token);
+        Task.Run(() => CleanUpDictionariesAsync(cancellationTokenSource.Token), cancellationTokenSource.Token);
     }
 
     public async Task LoadConfigurationAsync()
@@ -47,27 +47,26 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
         keyExpiryStore[key] = expiry.HasValue ? DateTime.UtcNow.Add(expiry.Value) : DateTime.MaxValue;
     }
 
-    public Task<string?> GetAsync(string clientId, string key)
-    {
-        return Task.FromResult(Get(clientId, key));
-    }
+    public Task<IEnumerable<(string Key, string Value)>> GetAsync(string clientId, Func<string, bool> keyPattern) 
+        => Task.FromResult(Get(clientId, keyPattern));
 
-    public string? Get(string clientId, string key)
+    public IEnumerable<(string Key, string Value)> Get(string clientId, Func<string, bool> keyPattern)
     {
         int db = _clientDbSelections.GetValueOrDefault(clientId, 0);
-        if (!_databaseExpiries.TryGetValue(db, out var dbExpiries)
-            || !dbExpiries.TryGetValue(key, out var expiry))
-        {
-            return _databases.TryGetValue(db, out var dbKeyValue) ? dbKeyValue.GetValueOrDefault(key) : null;
-        }
 
-        if (expiry <= DateTime.UtcNow)
-        {
-            _databases[db].TryRemove(key, out _);
-            dbExpiries.TryRemove(key, out _);
-        }
+        if (!_databases.TryGetValue(db, out var dbStore)
+            || !_databaseExpiries.TryGetValue(db, out var dbExpiryStore))
+            yield break;
 
-        return null;
+        foreach (var kvp in dbStore.Where(kvp => keyPattern(kvp.Key)))
+        {
+            if (!dbExpiryStore.TryGetValue(kvp.Key, out var expiry) || expiry > DateTime.UtcNow)
+            {
+                yield return (kvp.Key, kvp.Value);
+            }
+            dbExpiryStore.TryRemove(kvp.Key, out _);
+            dbStore.TryRemove(kvp.Key, out _);
+        }
     }
 
     public void SelectDatabase(string clientId, int dbIndex)
@@ -79,7 +78,7 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
         Console.WriteLine($"Client: {clientId} switched to DB: {dbIndex}");
     }
 
-    private async Task CleanUpDictionaries(CancellationToken cancellationToken = default)
+    private async Task CleanUpDictionariesAsync(CancellationToken cancellationToken = default)
     {
         Console.WriteLine("Background cleanup started");
         while (!cancellationToken.IsCancellationRequested)
@@ -89,9 +88,9 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
                 DateTime now = DateTime.UtcNow;
                 foreach (var dbExpiryKvp in _databaseExpiries)
                 {
-                    if (!_databases.TryGetValue(dbExpiryKvp.Key, out var dbStore)) 
+                    if (!_databases.TryGetValue(dbExpiryKvp.Key, out var dbStore))
                         continue;
-                    
+
                     var expiredKeys = dbExpiryKvp.Value.Where(kvp => kvp.Value <= now)
                         .Select(kvp => kvp.Key)
                         .ToList();
@@ -126,7 +125,7 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
         if (rdbFile == null)
             return;
         //Validate checksum
- 
+
         foreach (var dbKvp in rdbFile.Databases)
         {
             var keyValueStore =

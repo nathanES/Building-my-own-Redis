@@ -32,6 +32,7 @@ internal static class RdbFileConverter
         await ParseAuxiliarySectionAsync(reader, rdbFileBuilder);
         await ParseDatabasesSectionAsync(reader, rdbFileBuilder);
         Console.WriteLine($"[Debug] End Parsing Sections");
+        
         byte[] checksum = ReadChecksum(reader);
         bool isChecksumValid = ValidateChecksum(checksum);
         var rdbFile = rdbFileBuilder.WithChecksum(checksum, isChecksumValid).Build();
