@@ -23,6 +23,8 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
     {
         var dir = await _configRepository.GetAsync("dir");
         var fileName = await _configRepository.GetAsync("dbfilename");
+        if (string.IsNullOrWhiteSpace(dir) || string.IsNullOrWhiteSpace(fileName))
+            return;
         await LoadDictionariesAsync(Path.Combine(dir!, fileName!));
     }
 
@@ -128,13 +130,17 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
 
         foreach (var dbKvp in rdbFile.Databases)
         {
-            var keyValueStore =
+            var database =
                 _databases.GetOrAdd(dbKvp.Value.DatabaseIndex, _ => new ConcurrentDictionary<string, string>());
-
+            var databaseExpiry = 
+                _databaseExpiries.GetOrAdd(dbKvp.Value.DatabaseIndex, _ => new ConcurrentDictionary<string, DateTime>());
             foreach (var keyValueKvp in dbKvp.Value.KeyValues)
             {
-                keyValueStore.TryAdd(keyValueKvp.Key, Encoding.UTF8.GetString(keyValueKvp.Value.Value));
+                database.TryAdd(keyValueKvp.Value.Key, Encoding.UTF8.GetString(keyValueKvp.Value.Value));
+                databaseExpiry.TryAdd(keyValueKvp.Value.Key, keyValueKvp.Value.Expiry);
             }
+            _databases[dbKvp.Value.DatabaseIndex] = database;
+            _databaseExpiries[dbKvp.Value.DatabaseIndex] = databaseExpiry;
         }
     }
 }
