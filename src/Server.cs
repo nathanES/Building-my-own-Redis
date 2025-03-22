@@ -37,8 +37,9 @@ class Program
             args.Cancel = true;
             cts.Cancel();
         };
+        var configurationRepository = serviceProvider.GetRequiredService<IRedisConfigRepository>();
         Console.WriteLine("[Debug] - Starting server...");
-        TcpListener server = new TcpListener(IPAddress.Any, 6379);
+        TcpListener server = new TcpListener(IPAddress.Any, int.Parse(await configurationRepository.GetAsync("port") ?? "6379"));
         server.Start();
         Console.WriteLine("[Debug] - Server started on port 6379");
         try

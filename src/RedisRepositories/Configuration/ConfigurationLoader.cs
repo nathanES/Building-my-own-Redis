@@ -7,7 +7,8 @@ internal static class ConfigurationLoader
       var configHandlers = new Dictionary<string, Func<string[], int, Task>>()
       {
          { "--dir", async (args, index) => await HandleConfigParameter(repository, args, index, "dir") },
-         { "--dbfilename", async (args, index) => await HandleConfigParameter(repository, args, index, "dbfilename") }
+         { "--dbfilename", async (args, index) => await HandleConfigParameter(repository, args, index, "dbfilename") },
+         { "--port", async(args, index) => await HandleConfigParameter(repository, args, index, "port")}
       };
       for (var i = 0; i < arguments.Length; i++)
       {
