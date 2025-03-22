@@ -33,35 +33,35 @@ class Program
 
         Console.CancelKeyPress += (sender, args) =>
         {
-            Console.WriteLine("Shutdown signal received...");
+            Console.WriteLine("[Debug] - Shutdown signal received...");
             args.Cancel = true;
             cts.Cancel();
         };
-        Console.WriteLine("Starting server...");
+        Console.WriteLine("[Debug] - Starting server...");
         TcpListener server = new TcpListener(IPAddress.Any, 6379);
         server.Start();
-        Console.WriteLine("Server started on port 6379");
+        Console.WriteLine("[Debug] - Server started on port 6379");
         try
         {
             while (!cts.Token.IsCancellationRequested)
             {
                 var socket = await server.AcceptSocketAsync(cts.Token);
-                Console.WriteLine("Client connected");
+                Console.WriteLine("[Debug] - Client connected");
                 _ = Task.Run(() => HandleClient(socket, cts.Token), cts.Token);
             }
         }
         catch (OperationCanceledException)
         {
-            Console.WriteLine("Server shutting down...");
+            Console.WriteLine("[Debug] - Server shutting down...");
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Error : {e.Message}");
+            Console.WriteLine($"[Error] - Error : {e.Message}");
         }
         finally
         {
             server.Stop();
-            Console.WriteLine("Server stopped");
+            Console.WriteLine("[Debug] - Server stopped");
         }
     }
 
@@ -74,11 +74,11 @@ class Program
             {
                 var buffer = new byte[1_024];
                 var requestLength = await socket.ReceiveAsync(buffer);
-                Console.WriteLine($"Received {requestLength} bytes");
+                Console.WriteLine($"[Debug] - Received {requestLength} bytes");
                 var respRequest = RespRequest.Parse(buffer[..requestLength], requestLength);
                 if (respRequest == null)
                 {
-                    Console.WriteLine("Received null request");
+                    Console.WriteLine("[Debug] - Received null request");
                     return;
                 }
 
@@ -89,20 +89,20 @@ class Program
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Client error: {e.Message}");
+            Console.WriteLine($"[Error] - Client error: {e.Message}");
         }
         finally
         {
             if (socket.Connected)
             {
-                Console.WriteLine("Shutting Down the Socket connection...");
+                Console.WriteLine("[Debug] - Shutting Down the Socket connection...");
                 socket.Shutdown(SocketShutdown.Both);
-                Console.WriteLine("Socket connection is shut down");
+                Console.WriteLine("[Debug] - Socket connection is shut down");
             }
 
-            Console.WriteLine("Closing the Socket connection...");
+            Console.WriteLine("[Debug] - Closing the Socket connection...");
             socket.Close();
-            Console.WriteLine("Socket connection closed");
+            Console.WriteLine("[Debug] - Socket connection closed");
         }
     }
 

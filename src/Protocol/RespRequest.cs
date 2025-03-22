@@ -30,7 +30,7 @@ internal class RespRequest
 
         var index = 1;
         var numberOfArguments = ReadInteger(rawRequest, ref index);
-        Console.WriteLine($"{nameof(numberOfArguments)}: {numberOfArguments})");
+        Console.WriteLine($"[Debug] - {nameof(numberOfArguments)}: {numberOfArguments})");
         RespRequestBuilder respRequestBuilder = new RespRequestBuilder()
             .AddCommand(ReadBulkString(rawRequest, ref index));
         for (var i = 1; i < numberOfArguments; i++)

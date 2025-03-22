@@ -141,6 +141,13 @@ internal class RdbEntry
             return this;
         }
 
+        public RdbEntryBuilder WithKeyValue((string key, byte[] value) keyValuePair)
+        {
+            WithKey(keyValuePair.key);
+            WithValue(keyValuePair.value);
+            return this;
+        }
+
         public RdbEntryBuilder WithExpiry(DateTime? expiry)
         {
             _rdbEntry.Expiry = expiry ?? DateTime.MaxValue;

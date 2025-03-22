@@ -8,7 +8,7 @@ internal class UnknownCommandHandler : IRedisCommandHandler
 
     public Task<RespResponse> HandleAsync(string clientId, RespRequest request)
     {
-        Console.WriteLine($"Unknown Command received... : {request.Command}");
+        Console.WriteLine($"[Error] - Unknown Command received... : {request.Command}");
         return Task.FromResult(RespResponse.FromError("Unknown Command"));
     }
 }

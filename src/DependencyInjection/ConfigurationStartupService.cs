@@ -7,9 +7,9 @@ internal class ConfigurationStartupService(IRedisConfigRepository configReposito
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        Console.WriteLine("Loading Redis configuration...");
+        Console.WriteLine("[Debug] - Loading Redis configuration...");
         await ConfigurationLoader.LoadConfiguration(configRepository, Environment.GetCommandLineArgs().Skip(1).ToArray());
-        Console.WriteLine("Configuration loaded successfully.");
+        Console.WriteLine("[Debug] - Configuration loaded successfully.");
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

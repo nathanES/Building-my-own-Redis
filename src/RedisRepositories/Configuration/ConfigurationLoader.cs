@@ -20,11 +20,11 @@ internal static class ConfigurationLoader
    {
       if (++index >= arguments.Length)
       {
-         Console.WriteLine($"Impossible to add {configKey} in config");
+         Console.WriteLine($"[Error] - Impossible to add {configKey} in config");
          return;
       }
 
-      Console.WriteLine($"Setting {configKey} to '{arguments[index]}'");
+      Console.WriteLine($"[Debug] - Setting {configKey} to '{arguments[index]}'");
       await repository.SetAsync(configKey, arguments[index]);
    }
 }

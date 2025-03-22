@@ -77,12 +77,12 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
             throw new ArgumentOutOfRangeException($"Invalid db index: {dbIndex}");
         _clientDbSelections.AddOrUpdate(clientId, dbIndex, (_, _) => dbIndex);
 
-        Console.WriteLine($"Client: {clientId} switched to DB: {dbIndex}");
+        Console.WriteLine($"[Debug] - Client: {clientId} switched to DB: {dbIndex}");
     }
 
     private async Task CleanUpDictionariesAsync(CancellationToken cancellationToken = default)
     {
-        Console.WriteLine("Background cleanup started");
+        Console.WriteLine("[Debug] - Background cleanup started");
         while (!cancellationToken.IsCancellationRequested)
         {
             try
@@ -108,12 +108,12 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("Cleanup task stopped due to cancellation.");
+                Console.WriteLine("[Debug] - Cleanup task stopped due to cancellation.");
                 break;
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Exception caught during cleanup: {e.Message}");
+                Console.WriteLine($"[Error] - Exception caught during cleanup: {e.Message}");
             }
         }
     }
