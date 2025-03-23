@@ -21,8 +21,8 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
 
     public async Task LoadConfigurationAsync()
     {
-        var dir = await _configRepository.GetAsync("dir");
-        var fileName = await _configRepository.GetAsync("dbfilename");
+        var dir = await _configRepository.GetAsync(ConstantsConfigurationKeys.Dir);
+        var fileName = await _configRepository.GetAsync(ConstantsConfigurationKeys.DbFileName);
         if (string.IsNullOrWhiteSpace(dir) || string.IsNullOrWhiteSpace(fileName))
             return;
         await LoadDictionariesAsync(Path.Combine(dir!, fileName!));
@@ -49,10 +49,10 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
         keyExpiryStore[key] = expiry.HasValue ? DateTime.UtcNow.Add(expiry.Value) : DateTime.MaxValue;
     }
 
-    public Task<IEnumerable<(string Key, string Value)>> GetAsync(string clientId, Func<string, bool> keyPattern) 
-        => Task.FromResult(Get(clientId, keyPattern));
+    public Task<IEnumerable<(string Key, string Value)>> GetByKeyPatternAsync(string clientId, Func<string, bool> pattern) 
+        => Task.FromResult(GetByKeyPattern(clientId, pattern));
 
-    public IEnumerable<(string Key, string Value)> Get(string clientId, Func<string, bool> keyPattern)
+    public IEnumerable<(string Key, string Value)> GetByKeyPattern(string clientId, Func<string, bool> pattern)
     {
         int db = _clientDbSelections.GetValueOrDefault(clientId, 0);
 
@@ -60,7 +60,7 @@ internal class InMemoryStorageRepository : IRedisStorageRepository
             || !_databaseExpiries.TryGetValue(db, out var dbExpiryStore))
             yield break;
 
-        foreach (var kvp in dbStore.Where(kvp => keyPattern(kvp.Key)))
+        foreach (var kvp in dbStore.Where(kvp => pattern(kvp.Key)))
         {
             if (!dbExpiryStore.TryGetValue(kvp.Key, out var expiry) || expiry > DateTime.UtcNow)
             {

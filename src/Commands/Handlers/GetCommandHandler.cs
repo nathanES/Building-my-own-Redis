@@ -12,7 +12,7 @@ internal class GetCommandHandler(IRedisStorageRepository redisStorageRepository)
         if (request.Arguments.Count < 1)
             return RespResponse.FromError(request.Arguments.Count + " arguments must be at least 1");
 
-        var getResult = await _redisStorageRepository.GetAsync(clientId, key => request.Arguments[0] == key); 
+        var getResult = await _redisStorageRepository.GetByKeyPatternAsync(clientId, key => request.Arguments[0] == key); 
         return RespResponse.FromBulkString(getResult.FirstOrDefault().Value);
     }
     

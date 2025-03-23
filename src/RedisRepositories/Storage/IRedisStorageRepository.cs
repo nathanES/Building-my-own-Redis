@@ -6,7 +6,7 @@ internal interface IRedisStorageRepository
     public void LoadConfiguration();
     public Task SetAsync(string clientId,string key, string value, TimeSpan? expiry = null);
     public void Set(string clientId, string key, string value, TimeSpan? expiry = null);
-    public Task<IEnumerable<(string Key, string Value)>> GetAsync(string clientId, Func<string, bool> keyPattern);
-    public IEnumerable<(string Key, string Value)> Get(string clientId, Func<string,bool> keyPattern);
+    public Task<IEnumerable<(string Key, string Value)>> GetByKeyPatternAsync(string clientId, Func<string, bool> pattern);
+    public IEnumerable<(string Key, string Value)> GetByKeyPattern(string clientId, Func<string,bool> pattern);
     public void SelectDatabase(string clientId, int dbIndex);
 }

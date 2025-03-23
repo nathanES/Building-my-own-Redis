@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using codecrafters_redis.Extensions;
 using codecrafters_redis.Protocol;
 using codecrafters_redis.RedisRepositories.Storage;
 
@@ -15,7 +16,7 @@ internal class KeysCommandHandler(IRedisStorageRepository redisStorageRepository
         
         Regex regex = CreateRegex(request.Arguments[0]);
 
-        var getResult = await _redisStorageRepository.GetAsync(clientId, key => regex.IsMatch(key));
+        var getResult = await _redisStorageRepository.GetByKeyPatternAsync(clientId, key => regex.IsMatch(key));
         return RespResponse.FromArray(getResult.Select(x=>x.Key).ToArray());
     }
 
@@ -26,6 +27,6 @@ internal class KeysCommandHandler(IRedisStorageRepository redisStorageRepository
             .Replace("\\?", ".") // `?` matches exactly one character
             .Replace("\\[", "[") // `[abc]` matches one of the listed characters
             .Replace("\\]", "]");
-        return new Regex(regexPattern, RegexOptions.Compiled| RegexOptions.IgnoreCase);
+        return regexPattern.CreateRegex(RegexOptions.Compiled| RegexOptions.IgnoreCase);
     }
 }

@@ -13,17 +13,21 @@ internal class InMemoryConfigRepository : IRedisConfigRepository
     }
 
     public void Set(string key, string value)
-    {
-        _redisConfigurations[key] = value;
-    }
+        => SetAsync(key, value).Wait();
 
     public Task<string?> GetAsync(string key)
-    {
-        return Task.FromResult(_redisConfigurations.GetValueOrDefault(key));
-    }
+        => Task.FromResult(_redisConfigurations.GetValueOrDefault(key));
 
     public string? Get(string key)
+        => GetAsync(key).Result;
+
+    public Task<IEnumerable<(string Key, string Value)>> GetByKeyPatternAsync(Func<string, bool> pattern)
+        => Task.FromResult(GetByKeyPattern(pattern));
+    public IEnumerable<(string Key, string Value)> GetByKeyPattern(Func<string, bool> pattern)
     {
-        return _redisConfigurations.GetValueOrDefault(key);
+        foreach (var pair in _redisConfigurations.Where(kvp => pattern(kvp.Key)))
+            yield return (pair.Key, pair.Value);
     }
+
+
 }
