@@ -8,5 +8,6 @@ internal enum RedisCommand
     Set,
     Get,
     Config,
-    Keys
+    Keys,
+    Info
 }

@@ -10,7 +10,6 @@ internal class RespRequest
 
     private RespRequest()
     {
-        
     }
 
     private static readonly Dictionary<string, RedisCommand> CommandLookup = new(StringComparer.OrdinalIgnoreCase)
@@ -20,7 +19,8 @@ internal class RespRequest
         { "SET", RedisCommand.Set },
         { "GET", RedisCommand.Get },
         { "CONFIG", RedisCommand.Config },
-        { "KEYS", RedisCommand.Keys}
+        { "KEYS", RedisCommand.Keys },
+        { "INFO", RedisCommand.Info },
     };
 
     public static RespRequest? Parse(byte[] rawRequest, int requestLength)

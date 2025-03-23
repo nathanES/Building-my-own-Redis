@@ -11,7 +11,7 @@ internal class RdbFile
 {
     public int Version { get; private set; }
     public Dictionary<int, RdbDatabase> Databases { get; private set; } = new Dictionary<int, RdbDatabase>();
-    public Dictionary<string, string> AuxiliaryFields { get; private set; } = new Dictionary<string, string>();
+    public Dictionary<string, byte[]> AuxiliaryFields { get; private set; } = new ();
     public byte[] Checksum { get; private set; } = new byte[8];
     public bool IsChecksumValid { get; private set; } = false;
 
@@ -33,9 +33,14 @@ internal class RdbFile
             return this;
         }
 
-        public RdbFileBuilder AddAuxiliaryField(string key, string value)
+        public RdbFileBuilder AddAuxiliaryField(string key, byte[] value)
         {
             _rdbFile.AuxiliaryFields[key] = value;
+            return this;
+        }
+        public RdbFileBuilder AddAuxiliaryField((string key, byte[] value) keyValuePair)
+        {
+            _rdbFile.AuxiliaryFields[keyValuePair.key] = keyValuePair.value;
             return this;
         }
 
